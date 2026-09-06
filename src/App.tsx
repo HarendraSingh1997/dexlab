@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { debounce, orderBy } from 'lodash-es'
 import {
   ArrowDownWideNarrow,
   FlaskConical,
@@ -111,10 +112,27 @@ export default function App() {
     return () => io.disconnect()
   }, [isSearching, list.hasNextPage, list.isFetchingNextPage, list.fetchNextPage, items.length])
 
+  // lodash-debounced auto-search: typing fires one lookup per 500 ms idle
+  // instead of a request per keystroke. Stable identity via ref (no memo APIs).
+  const debouncedSubmit = useRef<ReturnType<typeof debounce> | null>(null)
+  if (!debouncedSubmit.current) {
+    debouncedSubmit.current = debounce((term: string) => {
+      setSubmitted(term)
+      writeSearchParam(term)
+    }, 500)
+  }
+  useEffect(() => () => debouncedSubmit.current?.cancel(), [])
+
+  function handleQueryChange(value: string) {
+    setQuery(value)
+    debouncedSubmit.current?.(value)
+  }
+
   // direct search (name or id) — the query fires via `enabled`;
   // the term is mirrored to `?search=` so results are shareable, like the
   // Next.js app's search endpoint
   const onSearch = () => {
+    debouncedSubmit.current?.cancel()
     setSubmitted(query)
     writeSearchParam(query)
   }
@@ -159,14 +177,10 @@ export default function App() {
     let bunch = items
     if (typeFilter) bunch = bunch.filter((p) => p.types.some((t) => t.type.name === typeFilter))
     if (favsOnly) bunch = bunch.filter((p) => favSet.has(p.id))
-    const sorted = [...bunch]
-    if (sort === 'name') sorted.sort((a, b) => a.name.localeCompare(b.name))
-    else if (sort === 'bst')
-      sorted.sort(
-        (a, b) => b.stats.reduce((x, s) => x + s.base_stat, 0) - a.stats.reduce((x, s) => x + s.base_stat, 0),
-      )
-    else sorted.sort((a, b) => a.id - b.id)
-    return sorted
+    if (sort === 'name') return orderBy(bunch, [(p) => p.name], ['asc'])
+    if (sort === 'bst')
+      return orderBy(bunch, [(p) => p.stats.reduce((x, s) => x + s.base_stat, 0)], ['desc'])
+    return orderBy(bunch, [(p) => p.id], ['asc'])
   })()
 
   // dossier pager: step through the current browse order (visible grid when the
@@ -223,7 +237,7 @@ export default function App() {
                 searchRefs.current[0] = el
               }}
               value={query}
-              onChange={(e) => setQuery(e.target.value)}
+              onChange={(e) => handleQueryChange(e.target.value)}
               onKeyDown={blurOnEscape}
               placeholder="Search name or dex № — e.g. bulbasaur, 25, gengar…"
               className="pl-10 pr-12"
@@ -268,7 +282,7 @@ export default function App() {
                 searchRefs.current[1] = el
               }}
               value={query}
-              onChange={(e) => setQuery(e.target.value)}
+              onChange={(e) => handleQueryChange(e.target.value)}
               onKeyDown={blurOnEscape}
               placeholder="Search name or №…"
               className="pl-10"

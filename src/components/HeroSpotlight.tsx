@@ -1,5 +1,6 @@
 import * as React from "react"
 import Autoplay from "embla-carousel-autoplay"
+import { orderBy } from "lodash-es"
 import { Dna } from "lucide-react"
 import {
   Carousel,
@@ -90,7 +91,7 @@ export function HeroSpotlight({ items, onSelect }: Props) {
   const [api, setApi] = React.useState<CarouselApi>()
   const [current, setCurrent] = React.useState(0)
 
-  const spotlight = [...items].sort((a, b) => bst(b) - bst(a)).slice(0, 8)
+  const spotlight = orderBy(items, [(p) => bst(p)], ["desc"]).slice(0, 8)
 
   // Stable autoplay plugin identity without memo: created once per mount.
   // A fresh array every render would make embla re-init the carousel loop.
