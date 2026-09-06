@@ -1,6 +1,6 @@
-import { AudioLines, Heart, Volume2 } from 'lucide-react'
+import { Heart, Volume2 } from 'lucide-react'
 import { artwork, dexId, title, TYPE_AURA, type Pokemon } from '@/lib/types'
-import { isSpeechSupported, speakPokemonName } from '@/lib/speech'
+import { speakPokemonName } from '@/lib/speech'
 import { cn } from '@/lib/utils'
 import { useTilt } from '@/hooks/useTilt'
 import { TypeBadge } from './TypeBadge'
@@ -39,11 +39,11 @@ export function PokemonCard({ pokemon, isFav, onToggleFav, onSelect, index }: Pr
         </span>
         <div className="flex gap-1.5">
           <button
-            aria-label="Play cry"
+            aria-label={`Pronounce ${title(pokemon.name)}`}
+            title={`Pronounce ${title(pokemon.name)}`}
             onClick={(e) => {
               e.stopPropagation()
-              const url = pokemon.cries?.latest
-              if (url) new Audio(url).play().catch(() => {})
+              speakPokemonName(pokemon.name)
             }}
             className="rounded-full border border-white/10 bg-black/30 p-1.5 text-white/70 backdrop-blur transition hover:bg-white/25 hover:text-white cursor-pointer"
           >
@@ -86,20 +86,7 @@ export function PokemonCard({ pokemon, isFav, onToggleFav, onSelect, index }: Pr
       </div>
 
       <div className="relative p-4 pt-2 [transform:translateZ(20px)]">
-        <button
-          onClick={(e) => {
-            e.stopPropagation()
-            speakPokemonName(pokemon.name)
-          }}
-          title={`Pronounce ${title(pokemon.name)}`}
-          aria-label={`Pronounce ${title(pokemon.name)}`}
-          className="group/name flex cursor-pointer items-center gap-1.5 text-left font-display text-lg font-bold tracking-tight transition-colors hover:text-[#FF3355]"
-        >
-          {title(pokemon.name)}
-          {isSpeechSupported() && (
-            <AudioLines className="size-4 shrink-0 opacity-0 transition-opacity group-hover/name:opacity-70" />
-          )}
-        </button>
+        <h3 className="font-display text-lg font-bold tracking-tight">{title(pokemon.name)}</h3>
         <div className="mt-2 flex flex-wrap gap-1.5">
           {pokemon.types.map((t) => (
             <TypeBadge key={t.type.name} type={t.type.name} />
