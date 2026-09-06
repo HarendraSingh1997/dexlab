@@ -135,6 +135,26 @@ export default function App() {
     return () => window.removeEventListener('popstate', sync)
   }, [])
 
+  // ⌘K / Ctrl+K focuses the search bar (whichever breakpoint is visible)
+  const searchRefs = useRef<(HTMLInputElement | null)[]>([])
+  useEffect(() => {
+    if (selected) return
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault()
+        const visible = searchRefs.current.find((el) => el && el.offsetParent !== null)
+        visible?.focus()
+        visible?.select()
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [selected])
+
+  function blurOnEscape(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (e.key === 'Escape') e.currentTarget.blur()
+  }
+
   const visible = (() => {
     let bunch = items
     if (typeFilter) bunch = bunch.filter((p) => p.types.some((t) => t.type.name === typeFilter))
@@ -199,12 +219,19 @@ export default function App() {
           >
             <Search className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-ink/40" />
             <Input
+              ref={(el) => {
+                searchRefs.current[0] = el
+              }}
               value={query}
               onChange={(e) => setQuery(e.target.value)}
+              onKeyDown={blurOnEscape}
               placeholder="Search name or dex № — e.g. bulbasaur, 25, gengar…"
-              className="pl-10"
+              className="pl-10 pr-12"
               aria-label="Search Pokémon"
             />
+            <kbd className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 rounded-md border border-line bg-chip px-1.5 py-0.5 font-mono text-[10px] text-ink/50">
+              ⌘K
+            </kbd>
           </form>
 
           <div className="ml-auto flex items-center gap-2">
@@ -237,8 +264,12 @@ export default function App() {
           >
             <Search className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-ink/40" />
             <Input
+              ref={(el) => {
+                searchRefs.current[1] = el
+              }}
               value={query}
               onChange={(e) => setQuery(e.target.value)}
+              onKeyDown={blurOnEscape}
               placeholder="Search name or №…"
               className="pl-10"
               aria-label="Search Pokémon"
