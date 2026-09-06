@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { animate } from 'animejs'
-import { ChevronLeft, ChevronRight, Dna, Heart, Ruler, Swords, Volume2, Weight, Zap } from 'lucide-react'
+import { AudioLines, ChevronLeft, ChevronRight, Dna, Heart, Ruler, Swords, Volume2, Weight, Zap } from 'lucide-react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs'
 import { Progress } from './ui/progress'
@@ -10,6 +10,7 @@ import { Skeleton } from './ui/skeleton'
 import { artwork, dexId, title, TYPE_AURA, type Pokemon } from '@/lib/types'
 import { flavorText } from '@/lib/pokeapi'
 import { usePokemonSpecies } from '@/hooks/usePokemon'
+import { isSpeechSupported, speakPokemonName, stopSpeaking } from '@/lib/speech'
 import { prefersReducedMotion } from '@/lib/motion'
 import { cn } from '@/lib/utils'
 import { TypeBadge } from './TypeBadge'
@@ -42,6 +43,9 @@ export function PokemonDetail({ pokemon, isFav, onToggleFav, onClose, onNavigate
   useEffect(() => {
     setImgReady(false)
   }, [pokemon?.id])
+
+  // stop pronunciation when stepping to another dossier or closing
+  useEffect(() => () => stopSpeaking(), [pokemon?.id])
 
   // arrow keys step through dossiers, mirroring the on-screen arrows
   useEffect(() => {
@@ -128,6 +132,15 @@ export function PokemonDetail({ pokemon, isFav, onToggleFav, onClose, onNavigate
                         onClick={() => new Audio(pokemon.cries!.latest!).play().catch(() => {})}
                       >
                         <Volume2 /> Cry
+                      </Button>
+                    )}
+                    {isSpeechSupported() && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => speakPokemonName(pokemon.name)}
+                      >
+                        <AudioLines /> Say name
                       </Button>
                     )}
                   </div>
